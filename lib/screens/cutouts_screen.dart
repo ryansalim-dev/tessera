@@ -13,11 +13,15 @@ class CutoutsScreen extends StatefulWidget {
     required this.seed,
     required this.difficulty,
     this.title = 'Cutouts',
+    this.onSolved,
   });
 
   final int seed;
   final Difficulty difficulty;
   final String title;
+
+  /// Called once when the puzzle is solved, with the hints used.
+  final ValueChanged<int>? onSolved;
 
   @override
   State<CutoutsScreen> createState() => _CutoutsScreenState();
@@ -29,6 +33,18 @@ class _CutoutsScreenState extends State<CutoutsScreen> {
       const CutoutsGenerator().generate(widget.seed, widget.difficulty),
     ),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _game.solved.addListener(_onSolvedChanged);
+  }
+
+  void _onSolvedChanged() {
+    if (_game.solved.value) {
+      widget.onSolved?.call(_game.hintsUsed.value + _game.mistakes.value);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
