@@ -4,6 +4,7 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/glaze/glaze_game.dart';
 import '../theme/tessera_colors.dart';
+import '../widgets/solved_card.dart';
 
 /// Hosts a [GlazeGame] with the glaze palette and actions as Flutter widgets.
 class GlazeScreen extends StatefulWidget {
@@ -53,8 +54,12 @@ class _GlazeScreenState extends State<GlazeScreen> {
                   child: GameWidget<GlazeGame>(
                     game: _game,
                     overlayBuilderMap: {
-                      GlazeGame.solvedOverlay: (context, game) =>
-                          _SolvedCard(game: game),
+                      GlazeGame.solvedOverlay: (context, game) => SolvedCard(
+                        hintsUsed: game.hintsUsed.value,
+                        clue: GlazeDigitsClue(
+                          digits: game.board.puzzle.keystoneDiagonal,
+                        ),
+                      ),
                     },
                   ),
                 ),
@@ -129,76 +134,6 @@ class _GlazeButton extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SolvedCard extends StatelessWidget {
-  const _SolvedCard({required this.game});
-
-  final GlazeGame game;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final clue = game.board.puzzle.keystoneDiagonal;
-    final hints = game.hintsUsed.value;
-    return Center(
-      child: Card(
-        margin: const EdgeInsets.all(32),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Fired!',
-                style: text.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                hints == 0
-                    ? 'No hints. Gold glaze earned.'
-                    : 'Solved with $hints hint${hints == 1 ? '' : 's'}.',
-                style: text.bodyMedium?.copyWith(color: TesseraColors.inkSoft),
-              ),
-              const SizedBox(height: 16),
-              Text('Keystone clue', style: text.labelLarge),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final v in clue)
-                    Container(
-                      margin: const EdgeInsets.all(2),
-                      width: 26,
-                      height: 26,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: TesseraColors.glaze(v),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '$v',
-                        style: TextStyle(
-                          color: TesseraColors.onGlaze(v),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                child: const Text('Back to tray'),
-              ),
-            ],
           ),
         ),
       ),

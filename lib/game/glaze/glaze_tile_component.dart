@@ -5,6 +5,7 @@ import 'package:flame/events.dart';
 import 'package:flutter/painting.dart' show TextStyle, FontWeight, FontFeature;
 
 import '../../theme/tessera_colors.dart';
+import '../common/effects.dart';
 import 'glaze_game.dart';
 
 /// One ceramic tile. Reads its state from the game each frame.

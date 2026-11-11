@@ -3,6 +3,7 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../theme/tessera_colors.dart';
 import 'glaze_screen.dart';
+import 'kiln_path_screen.dart';
 
 /// The day's tray: four puzzle tiles and the keystone.
 ///
@@ -38,22 +39,27 @@ class TodayScreen extends StatelessWidget {
   ];
 
   void _open(BuildContext context, PuzzleKind kind, PuzzleDay day) {
-    if (kind != PuzzleKind.glaze) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => GlazeScreen(
-          seed: day.seedFor(kind),
-          difficulty: day.difficulty,
-          title: 'Glaze',
-        ),
-      ),
-    );
+    final seed = day.seedFor(kind);
+    final difficulty = day.difficulty;
+    final Widget? screen = switch (kind) {
+      PuzzleKind.glaze => GlazeScreen(seed: seed, difficulty: difficulty),
+      PuzzleKind.kilnPath => KilnPathScreen(seed: seed, difficulty: difficulty),
+      _ => null,
+    };
+    if (screen == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   @override
   Widget build(BuildContext context) {
     final day = PuzzleDay.fromLocal(today ?? DateTime.now());
     final tray = DailyTray.forDay(day);
+    // Playable types that are not in today's tray, so every finished puzzle
+    // type can always be reached.
+    final practice = [
+      for (final kind in PuzzleKind.values)
+        if (kind.isPlayable && !tray.kinds.contains(kind)) kind,
+    ];
     final date = day.date;
     final text = Theme.of(context).textTheme;
 
@@ -98,17 +104,25 @@ class TodayScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const _KeystoneTile(),
-            if (!tray.kinds.contains(PuzzleKind.glaze)) ...[
+            if (practice.isNotEmpty) ...[
               const SizedBox(height: 28),
               Text('Practice', style: text.titleLarge),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 150,
-                child: _TrayTile(
-                  kind: PuzzleKind.glaze,
-                  accent: TesseraColors.celadon,
-                  onTap: () => _open(context, PuzzleKind.glaze, day),
-                ),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.05,
+                children: [
+                  for (final kind in practice)
+                    _TrayTile(
+                      kind: kind,
+                      accent: TesseraColors.celadon,
+                      onTap: () => _open(context, kind, day),
+                    ),
+                ],
               ),
             ],
           ],
