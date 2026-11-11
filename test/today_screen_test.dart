@@ -8,6 +8,7 @@ import 'package:puzzle_core/puzzle_core.dart';
 import 'package:tessera/app.dart';
 import 'package:tessera/game/pebbles/pebbles_game.dart';
 import 'package:tessera/juice/juice.dart';
+import 'package:tessera/progress/progress_store.dart';
 
 void main() {
   setUp(() {
@@ -118,11 +119,55 @@ void main() {
     expect(find.textContaining('1 of 4 clues'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Pebbles.*fired')), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Keystone'));
+    await tester.pump();
     await tester.tap(find.text('Keystone'));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.textContaining('lent'), findsOneWidget);
     expect(find.text('Erase'), findsOneWidget);
+  });
+
+  testWidgets('shows the streak and the week strip from saved progress', (
+    tester,
+  ) async {
+    var log = ProgressLog();
+    for (final d in [9, 10, 11]) {
+      log = log.recordSolve(PuzzleDay(2026, 11, d), PuzzleKind.glaze, 0);
+    }
+    log = log.recordKeystone(
+      PuzzleDay(2026, 11, 11),
+      const KeystoneResult(gold: true, hints: 0),
+    );
+    await tester.pumpWidget(
+      TesseraApp(
+        today: DateTime(2026, 11, 11),
+        progress: ProgressStore.memory(log),
+      ),
+    );
+    expect(find.text('3-day kiln'), findsOneWidget);
+    expect(find.text('Set in gold today. Well fired.'), findsOneWidget);
+    expect(find.text('Play again'), findsOneWidget);
+  });
+
+  testWidgets('a fresh player is asked to light the kiln', (tester) async {
+    await tester.pumpWidget(TesseraApp(today: DateTime(2026, 11, 11)));
+    expect(find.text('Light the kiln'), findsOneWidget);
+  });
+
+  testWidgets('a tray solve marks the tile and lights the kiln', (
+    tester,
+  ) async {
+    final today = DateTime(2026, 11, 11);
+    final store = ProgressStore.memory();
+    await tester.pumpWidget(TesseraApp(today: today, progress: store));
+    final day = PuzzleDay.fromLocal(today);
+    final kind = DailyTray.forDay(day).kinds.first;
+    store.recordSolve(day, kind, 0);
+    await tester.pump();
+    expect(find.text('1-day kiln'), findsOneWidget);
+    expect(find.text('FIRED'), findsOneWidget);
+    expect(find.textContaining('1 / 4 fired'), findsOneWidget);
   });
 }

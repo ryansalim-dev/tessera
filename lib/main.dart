@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'progress/progress_store.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const TesseraApp());
+  final progress = await ProgressStore.open();
+  runApp(TesseraApp(progress: progress));
 }

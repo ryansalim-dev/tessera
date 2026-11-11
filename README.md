@@ -64,7 +64,10 @@ is unique (base givens are added only when it would not be). Starting early is
 allowed: `KeystonePuzzle.givensFor` lends extra tiles until the answer is
 unique, and only a full-clue, hint-free solve earns the gold glaze.
 
-Solved puzzles are remembered for the session only; persistence is M2.
+Solved puzzles and the keystone result are saved on the device (`lib/progress/`,
+backed by `shared_preferences`). A day counts toward the streak ("kiln") once
+any tray puzzle or the keystone is fired; practice puzzles do not count. The
+streak and best-run maths live in `puzzle_core` (`ProgressLog`).
 
 ## Daily puzzles
 
