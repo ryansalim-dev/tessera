@@ -136,3 +136,76 @@ class ShadedGridClue extends StatelessWidget {
     );
   }
 }
+
+/// The shape of a seam, drawn as a gold line, the clue Seams reveals.
+class SeamShapeClue extends StatelessWidget {
+  const SeamShapeClue({super.key, required this.steps});
+
+  /// Step directions: 0 up, 1 right, 2 down, 3 left.
+  final List<int> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'A seam shape of ${steps.length + 1} tiles',
+      child: CustomPaint(
+        size: const Size(120, 120),
+        painter: _SeamShapePainter(steps),
+      ),
+    );
+  }
+}
+
+class _SeamShapePainter extends CustomPainter {
+  _SeamShapePainter(this.steps);
+
+  final List<int> steps;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var x = 0, y = 0, minX = 0, maxX = 0, minY = 0, maxY = 0;
+    final points = <(int, int)>[(0, 0)];
+    for (final s in steps) {
+      switch (s) {
+        case 0:
+          y--;
+        case 1:
+          x++;
+        case 2:
+          y++;
+        default:
+          x--;
+      }
+      points.add((x, y));
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    final span = [maxX - minX, maxY - minY, 1].reduce((a, b) => a > b ? a : b);
+    final cell = size.width / (span + 1);
+    final ox = (size.width - (maxX - minX) * cell) / 2;
+    final oy = (size.height - (maxY - minY) * cell) / 2;
+    Offset at((int, int) p) =>
+        Offset(ox + (p.$1 - minX) * cell, oy + (p.$2 - minY) * cell);
+    final path = Path()..moveTo(at(points.first).dx, at(points.first).dy);
+    for (final p in points.skip(1)) {
+      path.lineTo(at(p).dx, at(p).dy);
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = cell * 0.3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = TesseraColors.gold,
+    );
+    final dot = Paint()..color = TesseraColors.ink;
+    canvas.drawCircle(at(points.first), cell * 0.2, dot);
+    canvas.drawCircle(at(points.last), cell * 0.2, dot);
+  }
+
+  @override
+  bool shouldRepaint(_SeamShapePainter old) => old.steps != steps;
+}

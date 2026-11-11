@@ -26,7 +26,7 @@ enum PuzzleKind {
 
   /// Types that have a playable implementation in this build.
   bool get isPlayable => switch (this) {
-        glaze || kilnPath || pebbles => true,
+        glaze || kilnPath || pebbles || seams => true,
         _ => false,
       };
 }

@@ -54,4 +54,15 @@ void main() {
     expect(find.text('Undo'), findsOneWidget);
     expect(find.textContaining('/ 36 tiles'), findsOneWidget);
   });
+
+  testWidgets('opens Seams from the home screen', (tester) async {
+    await tester.pumpWidget(TesseraApp(today: DateTime(2026, 11, 11)));
+    await tester.ensureVisible(find.text('Seams'));
+    await tester.pump();
+    await tester.tap(find.text('Seams'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.textContaining('seams'), findsWidgets);
+  });
 }
