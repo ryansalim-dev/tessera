@@ -1061,13 +1061,19 @@ class _KilnStreak extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    headline,
-                    style: const TextStyle(
-                      fontFamily: TesseraFonts.display,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: TesseraColors.chalk,
+                  // One line: shrink rather than wrap beside the week strip.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      headline,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontFamily: TesseraFonts.display,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: TesseraColors.chalk,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 2),
