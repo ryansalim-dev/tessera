@@ -1,8 +1,12 @@
 import 'dart:ui';
 
+import 'package:flame/game.dart';
+import 'package:flutter/widgets.dart' show ValueKey;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 import 'package:tessera/app.dart';
+import 'package:tessera/game/pebbles/pebbles_game.dart';
 
 void main() {
   setUp(() {
@@ -53,5 +57,66 @@ void main() {
     }
     expect(find.text('Undo'), findsOneWidget);
     expect(find.textContaining('/ 36 tiles'), findsOneWidget);
+  });
+
+  testWidgets('opens Seams from the home screen', (tester) async {
+    await tester.pumpWidget(TesseraApp(today: DateTime(2026, 11, 11)));
+    await tester.ensureVisible(find.text('Seams'));
+    await tester.pump();
+    await tester.tap(find.text('Seams'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.textContaining('seams'), findsWidgets);
+  });
+
+  testWidgets('opens every puzzle type', (tester) async {
+    for (final kind in PuzzleKind.values) {
+      // A fresh key per type so each starts from the home screen.
+      await tester.pumpWidget(
+        TesseraApp(key: ValueKey(kind), today: DateTime(2026, 11, 11)),
+      );
+      await tester.ensureVisible(find.text(kind.title));
+      await tester.pump();
+      await tester.tap(find.text(kind.title));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Hint'), findsOneWidget, reason: kind.name);
+    }
+  });
+
+  testWidgets('solving a tray puzzle collects its keystone clue', (
+    tester,
+  ) async {
+    // 2026-11-11's tray: Glaze, Pebbles, Seams, Cutouts.
+    final today = DateTime(2026, 11, 11);
+    await tester.pumpWidget(TesseraApp(today: today));
+    expect(find.textContaining('0 of 4 clues'), findsOneWidget);
+
+    await tester.tap(find.text('Pebbles').first);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final game = tester
+        .widget<GameWidget<PebblesGame>>(find.byType(GameWidget<PebblesGame>))
+        .game!;
+    for (final cell in game.board.puzzle.solution) {
+      game.tapTile(cell);
+    }
+    expect(game.solved.value, isTrue);
+    await tester.pageBack();
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.textContaining('1 of 4 clues'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Pebbles.*fired')), findsOneWidget);
+
+    await tester.tap(find.text('Keystone'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.textContaining('lent'), findsOneWidget);
+    expect(find.text('Erase'), findsOneWidget);
   });
 }
