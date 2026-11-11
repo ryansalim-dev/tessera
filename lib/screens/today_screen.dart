@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../juice/juice.dart';
+import '../progress/progress_store.dart';
 import '../theme/puzzle_style.dart';
 import '../theme/tessera_colors.dart';
 import '../theme/tessera_theme.dart';
@@ -19,23 +20,19 @@ import 'shards_screen.dart';
 
 /// The day's tray: four puzzle tiles and the keystone.
 ///
-/// Solved tray puzzles are remembered for this session only, which is enough
-/// to unlock the keystone's clues.
-///
-/// TODO(M2): streak ("kiln"), persistence of the day's progress, Riverpod
-/// state and go_router routes.
+/// Solved tray puzzles and the keystone are saved in [progress], which also
+/// drives the streak ("kiln") and the week strip.
 class TodayScreen extends StatefulWidget {
-  const TodayScreen({super.key, this.today});
+  const TodayScreen({super.key, this.today, required this.progress});
 
   final DateTime? today;
+  final ProgressStore progress;
 
   @override
   State<TodayScreen> createState() => _TodayScreenState();
 }
 
 class _TodayScreenState extends State<TodayScreen> {
-  /// Tray puzzles solved today, with the hints each took.
-  final Map<PuzzleKind, int> _solved = {};
   KeystonePuzzle? _keystone;
   PuzzleDay? _keystoneDay;
 
@@ -67,8 +64,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final seed = day.seedFor(kind);
     final difficulty = day.difficulty;
     void solved(int hints) {
-      if (!inTray || !mounted) return;
-      setState(() => _solved.putIfAbsent(kind, () => hints));
+      if (inTray) widget.progress.recordSolve(day, kind, hints);
     }
 
     final Widget screen = switch (kind) {
@@ -116,15 +112,35 @@ class _TodayScreenState extends State<TodayScreen> {
         builder: (_) => KeystoneScreen(
           puzzle: _keystone!,
           tray: tray.kinds,
-          solved: _solved.keys.toSet(),
+          solved: widget.progress.log.dayOf(day).solved.keys.toSet(),
+          onSet: (result) => widget.progress.recordKeystone(day, result),
         ),
       ),
     );
   }
 
   @override
+  void initState() {
+    super.initState();
+    widget.progress.addListener(_onProgress);
+  }
+
+  @override
+  void dispose() {
+    widget.progress.removeListener(_onProgress);
+    super.dispose();
+  }
+
+  void _onProgress() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final day = PuzzleDay.fromLocal(widget.today ?? DateTime.now());
+    final log = widget.progress.log;
+    final record = log.dayOf(day);
+    final solvedToday = record.solved;
     final tray = DailyTray.forDay(day);
     // Playable types that are not in today's tray, so every finished puzzle
     // type can always be reached.
@@ -133,7 +149,7 @@ class _TodayScreenState extends State<TodayScreen> {
         if (kind.isPlayable && !tray.kinds.contains(kind)) kind,
     ];
     final date = day.date;
-    final collected = tray.kinds.where(_solved.containsKey).length;
+    final collected = tray.kinds.where(solvedToday.containsKey).length;
 
     return Scaffold(
       backgroundColor: TesseraColors.night,
@@ -169,6 +185,13 @@ class _TodayScreenState extends State<TodayScreen> {
                 ),
                 const SizedBox(height: 14),
                 const _Wordmark(),
+                const SizedBox(height: 18),
+                _KilnStreak(
+                  streak: log.currentStreak(day),
+                  best: log.bestStreak(),
+                  doneToday: log.counts(day),
+                  week: log.week(day),
+                ),
                 const SizedBox(height: 22),
                 _SectionLabel(
                   "Today's tray",
@@ -189,7 +212,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         child: _TrayTile(
                           kind: kind,
                           accent: TesseraColors.glazes[i],
-                          solved: _solved.containsKey(kind),
+                          solved: solvedToday.containsKey(kind),
                           onTap: kind.isPlayable
                               ? () => _open(kind, day, inTray: true)
                               : null,
@@ -202,9 +225,12 @@ class _TodayScreenState extends State<TodayScreen> {
                   order: 4,
                   child: _KeystoneTile(
                     collected: collected,
+                    result: record.keystone,
                     gems: [
                       for (final (i, k) in tray.kinds.indexed)
-                        _solved.containsKey(k) ? TesseraColors.glazes[i] : null,
+                        solvedToday.containsKey(k)
+                            ? TesseraColors.glazes[i]
+                            : null,
                     ],
                     onTap: () => _openKeystone(day, tray),
                   ),
@@ -749,11 +775,15 @@ class _FiredBadge extends StatelessWidget {
 class _KeystoneTile extends StatefulWidget {
   const _KeystoneTile({
     required this.collected,
+    required this.result,
     required this.gems,
     required this.onTap,
   });
 
   final int collected;
+
+  /// Today's keystone result, once it is set.
+  final KeystoneResult? result;
 
   /// One entry per tray puzzle: its glaze once solved, else null.
   final List<Color?> gems;
@@ -780,6 +810,7 @@ class _KeystoneTileState extends State<_KeystoneTile>
   Widget build(BuildContext context) {
     final total = widget.gems.length;
     final all = widget.collected == total;
+    final result = widget.result;
     return _Squish(
       onTap: widget.onTap,
       child: AnimatedBuilder(
@@ -849,10 +880,19 @@ class _KeystoneTileState extends State<_KeystoneTile>
               ),
               const SizedBox(height: 12),
               Text(
-                all
-                    ? 'Every clue collected. Set the keystone for gold.'
-                    : '${widget.collected} of $total clues collected. '
-                          'Start now and the keystone lends you tiles.',
+                switch (result) {
+                  KeystoneResult(gold: true) =>
+                    'Set in gold today. Well fired.',
+                  KeystoneResult() when all =>
+                    'Set today. Replay it without hints for gold.',
+                  KeystoneResult() =>
+                    'Set today. Collect every clue and replay it for gold.',
+                  null when all =>
+                    'Every clue collected. Set the keystone for gold.',
+                  null =>
+                    '${widget.collected} of $total clues collected. '
+                        'Start now and the keystone lends you tiles.',
+                },
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontFamily: TesseraFonts.body,
@@ -871,7 +911,13 @@ class _KeystoneTileState extends State<_KeystoneTile>
                     horizontal: 26,
                     vertical: 11,
                   ),
-                  child: Text(all ? 'Set it in gold' : 'Start the keystone'),
+                  child: Text(
+                    result != null
+                        ? 'Play again'
+                        : all
+                        ? 'Set it in gold'
+                        : 'Start the keystone',
+                  ),
                 ),
               ),
             ],
@@ -959,4 +1005,186 @@ class _KeystoneStonePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_KeystoneStonePainter old) => false;
+}
+
+/// The kiln: how many days in a row a daily puzzle has been fired, with the
+/// last seven days as a strip of small tiles.
+class _KilnStreak extends StatelessWidget {
+  const _KilnStreak({
+    required this.streak,
+    required this.best,
+    required this.doneToday,
+    required this.week,
+  });
+
+  final int streak;
+  final int best;
+  final bool doneToday;
+  final List<(PuzzleDay, DayRecord)> week;
+
+  static const _initials = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  @override
+  Widget build(BuildContext context) {
+    final lit = streak > 0;
+    final headline = switch (streak) {
+      0 => 'Light the kiln',
+      1 => '1-day kiln',
+      _ => '$streak-day kiln',
+    };
+    final note = !doneToday
+        ? (lit
+              ? 'Fire a puzzle today to keep it.'
+              : 'Fire a puzzle to start a streak.')
+        : best > streak
+        ? 'Best: $best days'
+        : 'Your best run yet';
+    return Semantics(
+      label: '$headline. $note',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.28),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: lit
+                ? TesseraColors.emberGlow.withValues(alpha: 0.45)
+                : Colors.white.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Row(
+          children: [
+            _Flame(lit: lit, burning: doneToday),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    headline,
+                    style: const TextStyle(
+                      fontFamily: TesseraFonts.display,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: TesseraColors.chalk,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    note,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: TesseraFonts.body,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: TesseraColors.chalkSoft,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            for (final (i, (day, record)) in week.indexed)
+              Padding(
+                padding: EdgeInsets.only(left: i == 0 ? 0 : 4),
+                child: _WeekTile(
+                  initial: _initials[day.date.weekday - 1],
+                  record: record,
+                  today: i == week.length - 1,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Flame extends StatelessWidget {
+  const _Flame({required this.lit, required this.burning});
+
+  final bool lit;
+  final bool burning;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(
+      Icons.local_fire_department_rounded,
+      size: 30,
+      color: lit
+          ? (burning ? TesseraColors.emberGlow : TesseraColors.terracotta)
+          : Colors.white.withValues(alpha: 0.25),
+    );
+    if (!burning) return icon;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: TesseraColors.emberGlow.withValues(alpha: 0.45),
+            blurRadius: 16,
+          ),
+        ],
+      ),
+      child: icon,
+    );
+  }
+}
+
+/// One day in the week strip: empty, fired, or gold when the keystone was
+/// set in gold.
+class _WeekTile extends StatelessWidget {
+  const _WeekTile({
+    required this.initial,
+    required this.record,
+    required this.today,
+  });
+
+  final String initial;
+  final DayRecord record;
+  final bool today;
+
+  @override
+  Widget build(BuildContext context) {
+    final gold = record.keystone?.gold ?? false;
+    final fired = record.counts;
+    final fill = gold
+        ? TesseraColors.gold
+        : fired
+        ? TesseraColors.terracotta
+        : Colors.black.withValues(alpha: 0.35);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutBack,
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(
+              color: today
+                  ? TesseraColors.chalk.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: fired ? 0.4 : 0.1),
+              width: today ? 1.5 : 1,
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          initial,
+          style: TextStyle(
+            fontFamily: TesseraFonts.body,
+            fontWeight: FontWeight.w800,
+            fontSize: 9,
+            color: today ? TesseraColors.chalk : TesseraColors.chalkSoft,
+          ),
+        ),
+      ],
+    );
+  }
 }

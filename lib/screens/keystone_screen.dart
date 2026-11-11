@@ -18,6 +18,7 @@ class KeystoneScreen extends StatefulWidget {
     required this.puzzle,
     required this.tray,
     required this.solved,
+    this.onSet,
   });
 
   final KeystonePuzzle puzzle;
@@ -27,6 +28,9 @@ class KeystoneScreen extends StatefulWidget {
 
   /// Tray puzzles solved so far.
   final Set<PuzzleKind> solved;
+
+  /// Called once the keystone is set, with the result to record.
+  final ValueChanged<KeystoneResult>? onSet;
 
   @override
   State<KeystoneScreen> createState() => _KeystoneScreenState();
@@ -41,6 +45,22 @@ class _KeystoneScreenState extends State<KeystoneScreen> {
     board: KeystoneBoard(widget.puzzle, widget.puzzle.givensFor(widget.solved)),
     rims: _rims,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _game.solved.addListener(_onSolvedChanged);
+  }
+
+  void _onSolvedChanged() {
+    if (!_game.solved.value) return;
+    widget.onSet?.call(
+      KeystoneResult(
+        gold: _game.board.givens.fullClues && _game.hintsUsed.value == 0,
+        hints: _game.hintsUsed.value,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
