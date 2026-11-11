@@ -1,9 +1,11 @@
 import 'package:flame/game.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../../juice/juice.dart';
+import '../common/effects.dart';
 import 'seams_board_component.dart';
 
 /// Flame game for one Seams plate.
@@ -25,7 +27,7 @@ class SeamsGame extends FlameGame {
   late final SeamsBoardComponent boardComponent;
 
   @override
-  Color backgroundColor() => TesseraColors.clay;
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {
@@ -112,17 +114,22 @@ class SeamsGame extends FlameGame {
   void _changed(int cell) {
     final before = joined.value;
     joined.value = board.joinedCount;
-    boardComponent.tileAt(cell).press();
-    if (haptics) {
-      joined.value > before
-          ? HapticFeedback.lightImpact()
-          : HapticFeedback.selectionClick();
-    }
+    final tile = boardComponent.tileAt(cell)..press();
     if (board.isSolved) {
       board.end();
       solved.value = true;
-      if (haptics) HapticFeedback.mediumImpact();
+      if (haptics) Juice.solve();
       boardComponent.fire(onComplete: () => overlays.add(solvedOverlay));
+      celebrate(this, size / 2, boardComponent.size.x / 2);
+      return;
+    }
+    if (joined.value > before) {
+      if (haptics) Juice.place(step: joined.value * 2);
+      boardComponent.add(
+        chipPuff(tile.position, TesseraColors.gold, size: tile.size.x),
+      );
+    } else if (haptics) {
+      Juice.tap();
     }
   }
 

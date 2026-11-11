@@ -4,6 +4,9 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/pebbles/pebbles_game.dart';
 import '../theme/tessera_colors.dart';
+import '../theme/puzzle_style.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/puzzle_scaffold.dart';
 import '../widgets/solved_card.dart';
 
 /// Hosts a [PebblesGame] with its actions as Flutter widgets.
@@ -48,79 +51,48 @@ class _PebblesScreenState extends State<PebblesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final total = _game.board.size;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: 'Start over',
-            icon: const Icon(Icons.refresh),
-            onPressed: _game.restart,
+    return PuzzleScaffold(
+      title: widget.title,
+      rule:
+          'One pebble in every row, column and region. '
+          'Pebbles never touch, not even at the corners.',
+      accent: PuzzleKind.pebbles.accent,
+      onRestart: _game.restart,
+      board: Center(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: GameWidget<PebblesGame>(
+            game: _game,
+            overlayBuilderMap: {
+              PebblesGame.solvedOverlay: (context, game) => SolvedCard(
+                hintsUsed: game.hintsUsed.value,
+                clue: ShadedGridClue(
+                  shaded: game.board.puzzle.keystoneNoEntry(),
+                  color: TesseraColors.chalk,
+                ),
+              ),
+            },
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: Text(
-                'One pebble in every row, column and region. '
-                'Pebbles never touch, not even at the corners.',
-                textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: TesseraColors.inkSoft),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: GameWidget<PebblesGame>(
-                    game: _game,
-                    overlayBuilderMap: {
-                      PebblesGame.solvedOverlay: (context, game) => SolvedCard(
-                        hintsUsed: game.hintsUsed.value,
-                        clue: ShadedGridClue(
-                          shaded: game.board.puzzle.keystoneNoEntry(),
-                          color: TesseraColors.ink,
-                        ),
-                      ),
-                    },
-                  ),
-                ),
-              ),
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: _game.pebbleCount,
-              builder: (context, count, _) => Text(
-                '$count / $total pebbles',
-                style: text.titleSmall?.copyWith(
-                  color: TesseraColors.inkSoft,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.hintsUsed,
-                    builder: (context, used, _) => TextButton.icon(
-                      onPressed: _game.useHint,
-                      icon: const Icon(Icons.lightbulb_outline),
-                      label: Text(used == 0 ? 'Hint' : 'Hint ($used)'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
+      status: ValueListenableBuilder<int>(
+        valueListenable: _game.pebbleCount,
+        builder: (context, count, _) =>
+            StatusPill(icon: Icons.circle, text: '$count / $total pebbles'),
+      ),
+      tools: [
+        ValueListenableBuilder<int>(
+          valueListenable: _game.hintsUsed,
+          builder: (context, used, _) => ToolButton(
+            icon: Icons.lightbulb_rounded,
+            label: 'Hint',
+            badge: used,
+            color: TesseraColors.terracotta,
+            onPressed: _game.useHint,
+          ),
+        ),
+      ],
     );
   }
 }

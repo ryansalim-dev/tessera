@@ -6,16 +6,17 @@ import 'package:flame/events.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import 'shards_game.dart';
 
 /// The broken plate: clay where the plate is, nothing where it chipped.
 class PlateComponent extends PositionComponent
     with HasGameReference<ShardsGame> {
-  static final _grout = Paint()..color = TesseraColors.grout;
-  static final _clay = Paint()..color = TesseraColors.clayLight;
+  static final _grout = Paint()..color = TesseraColors.shelf;
+  static final _rim = Paint()..color = TesseraColors.shelfDark;
   static final _shadow = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.12)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    ..color = const Color(0x99000000)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
   @override
   void render(Canvas canvas) {
@@ -29,21 +30,20 @@ class PlateComponent extends PositionComponent
         Rect.fromLTWH((i % n) * cell, (i ~/ n) * cell, cell, cell),
       );
     }
-    canvas.drawPath(outline.shift(const Offset(0, 3)), _shadow);
+    canvas.drawPath(outline.shift(const Offset(0, 8)), _shadow);
+    canvas.drawPath(outline.shift(const Offset(0, 4)), _rim);
     canvas.drawPath(outline, _grout);
     for (var i = 0; i < p.cellCount; i++) {
       if (!p.plate[i]) continue;
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            (i % n) * cell + 2,
-            (i ~/ n) * cell + 2,
-            cell - 4,
-            cell - 4,
-          ),
-          Radius.circular(cell * 0.12),
+      Ceramic.well(
+        canvas,
+        Rect.fromLTWH(
+          (i % n) * cell + 2.5,
+          (i ~/ n) * cell + 2.5,
+          cell - 5,
+          cell - 5,
         ),
-        _clay,
+        radius: 0.14,
       );
     }
   }
@@ -147,10 +147,10 @@ class ShardComponent extends PositionComponent
     ..style = PaintingStyle.stroke
     ..strokeWidth = 2.5
     ..color = TesseraColors.gold;
-  static final _shine = Paint()..color = const Color(0x33FFFFFF);
+  static final _shine = Paint()..color = const Color(0x44FFFFFF);
   static final _shadow = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.18)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    ..color = const Color(0x88000000)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
   @override
   void render(Canvas canvas) {
@@ -166,12 +166,23 @@ class ShardComponent extends PositionComponent
         ),
       );
     }
-    if (_dragging) canvas.drawPath(path.shift(const Offset(0, 6)), _shadow);
-    _fill.color = TesseraColors.glaze(index + 1);
+    final glaze = TesseraColors.glaze(index + 1);
+    final lip = cell * 0.08;
+    canvas.drawPath(path.shift(Offset(0, _dragging ? 14 : lip + 3)), _shadow);
+    _fill.color = Ceramic.shade(glaze, 0.4);
+    canvas.drawPath(path.shift(Offset(0, lip)), _fill);
+    _fill.shader = Gradient.linear(Offset.zero, Offset(0, cell * 3), [
+      Ceramic.tint(glaze, 0.15),
+      Ceramic.shade(glaze, 0.05),
+    ]);
     canvas.drawPath(path, _fill);
+    _fill.shader = null;
     for (final (r, c) in s.cells) {
-      canvas.drawRect(
-        Rect.fromLTWH(c * cell + 4, r * cell + 4, cell - 8, cell * 0.2),
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(c * cell + 5, r * cell + 5, cell * 0.5, cell * 0.14),
+          Radius.circular(cell * 0.07),
+        ),
         _shine,
       );
     }

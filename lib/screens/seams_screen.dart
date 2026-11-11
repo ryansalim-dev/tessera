@@ -4,6 +4,9 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/seams/seams_game.dart';
 import '../theme/tessera_colors.dart';
+import '../theme/puzzle_style.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/puzzle_scaffold.dart';
 import '../widgets/solved_card.dart';
 
 /// Hosts a [SeamsGame] with its actions as Flutter widgets.
@@ -48,78 +51,47 @@ class _SeamsScreenState extends State<SeamsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final total = _game.board.puzzle.pairCount;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: 'Start over',
-            icon: const Icon(Icons.refresh),
-            onPressed: _game.restart,
+    return PuzzleScaffold(
+      title: widget.title,
+      rule:
+          'Join each pair of matching shards with a seam. '
+          'Seams never cross, and together they fill the plate.',
+      accent: PuzzleKind.seams.accent,
+      onRestart: _game.restart,
+      board: Center(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: GameWidget<SeamsGame>(
+            game: _game,
+            overlayBuilderMap: {
+              SeamsGame.solvedOverlay: (context, game) => SolvedCard(
+                hintsUsed: game.hintsUsed.value,
+                clue: SeamShapeClue(steps: game.board.puzzle.keystoneSeamShape),
+              ),
+            },
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: Text(
-                'Join each pair of matching shards with a seam. '
-                'Seams never cross, and together they fill the plate.',
-                textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: TesseraColors.inkSoft),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: GameWidget<SeamsGame>(
-                    game: _game,
-                    overlayBuilderMap: {
-                      SeamsGame.solvedOverlay: (context, game) => SolvedCard(
-                        hintsUsed: game.hintsUsed.value,
-                        clue: SeamShapeClue(
-                          steps: game.board.puzzle.keystoneSeamShape,
-                        ),
-                      ),
-                    },
-                  ),
-                ),
-              ),
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: _game.joined,
-              builder: (context, joined, _) => Text(
-                '$joined / $total seams',
-                style: text.titleSmall?.copyWith(
-                  color: TesseraColors.inkSoft,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.hintsUsed,
-                    builder: (context, used, _) => TextButton.icon(
-                      onPressed: _game.useHint,
-                      icon: const Icon(Icons.lightbulb_outline),
-                      label: Text(used == 0 ? 'Hint' : 'Hint ($used)'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
+      status: ValueListenableBuilder<int>(
+        valueListenable: _game.joined,
+        builder: (context, joined, _) => StatusPill(
+          icon: Icons.auto_awesome_rounded,
+          text: '$joined / $total seams',
+        ),
+      ),
+      tools: [
+        ValueListenableBuilder<int>(
+          valueListenable: _game.hintsUsed,
+          builder: (context, used, _) => ToolButton(
+            icon: Icons.lightbulb_rounded,
+            label: 'Hint',
+            badge: used,
+            color: TesseraColors.terracotta,
+            onPressed: _game.useHint,
+          ),
+        ),
+      ],
     );
   }
 }

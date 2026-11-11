@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/painting.dart' show TextStyle, FontWeight, FontFeature;
 
 import '../../theme/tessera_colors.dart';
+import '../../theme/tessera_theme.dart';
 import 'kiln_path_board_component.dart';
 import 'kiln_path_game.dart';
 
@@ -18,6 +19,12 @@ class KilnPathLineComponent extends PositionComponent
     ..strokeJoin = StrokeJoin.round
     ..color = TesseraColors.terracotta;
   static final _fill = Paint();
+  static final _lineGlow = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round
+    ..color = TesseraColors.ember.withValues(alpha: 0.45)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
   static final _ring = Paint()
     ..style = PaintingStyle.stroke
     ..color = TesseraColors.gold;
@@ -39,7 +46,16 @@ class KilnPathLineComponent extends PositionComponent
         final c = parent.centreOf(path[i]);
         i == 0 ? p.moveTo(c.x, c.y) : p.lineTo(c.x, c.y);
       }
+      _lineGlow.strokeWidth = tile * 0.42;
+      canvas.drawPath(p, _lineGlow);
+      _line
+        ..color = TesseraColors.terracotta
+        ..strokeWidth = tile * 0.26;
       canvas.drawPath(p, _line);
+      _line
+        ..color = TesseraColors.emberGlow
+        ..strokeWidth = tile * 0.08;
+      canvas.drawPath(p.shift(Offset(0, -tile * 0.04)), _line);
     }
 
     if (!game.solved.value) {
@@ -51,6 +67,7 @@ class KilnPathLineComponent extends PositionComponent
     final r = tile * 0.3;
     final text = TextPaint(
       style: TextStyle(
+        fontFamily: TesseraFonts.body,
         fontSize: r * 1.05,
         fontWeight: FontWeight.w800,
         color: TesseraColors.clayLight,

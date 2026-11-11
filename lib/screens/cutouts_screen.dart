@@ -4,6 +4,9 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/cutouts/cutouts_game.dart';
 import '../theme/tessera_colors.dart';
+import '../theme/puzzle_style.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/puzzle_scaffold.dart';
 import '../widgets/solved_card.dart';
 
 /// Hosts a [CutoutsGame] with its actions as Flutter widgets.
@@ -48,73 +51,44 @@ class _CutoutsScreenState extends State<CutoutsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: 'Start over',
-            icon: const Icon(Icons.refresh),
-            onPressed: _game.restart,
+    return PuzzleScaffold(
+      title: widget.title,
+      rule:
+          'The clay is folded along the glowing lines, then stamped '
+          'through every layer. Which sheet do you get when you unfold it?',
+      accent: PuzzleKind.cutouts.accent,
+      onRestart: _game.restart,
+      board: GameWidget<CutoutsGame>(
+        game: _game,
+        overlayBuilderMap: {
+          CutoutsGame.solvedOverlay: (context, game) => SolvedCard(
+            hintsUsed: game.hintsUsed.value + game.mistakes.value,
+            clue: ShadedGridClue(
+              shaded: game.board.puzzle.keystoneStamp(),
+              color: TesseraColors.cobalt,
+            ),
           ),
-        ],
+        },
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: Text(
-                'The clay is folded along the red lines, then stamped '
-                'through every layer. Which sheet do you get when you '
-                'unfold it?',
-                textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: TesseraColors.inkSoft),
-              ),
-            ),
-            Expanded(
-              child: GameWidget<CutoutsGame>(
-                game: _game,
-                overlayBuilderMap: {
-                  CutoutsGame.solvedOverlay: (context, game) => SolvedCard(
-                    hintsUsed: game.hintsUsed.value + game.mistakes.value,
-                    clue: ShadedGridClue(
-                      shaded: game.board.puzzle.keystoneStamp(),
-                      color: TesseraColors.cobalt,
-                    ),
-                  ),
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.mistakes,
-                    builder: (context, m, _) => Text(
-                      m == 0 ? 'No cracks' : '$m crack${m == 1 ? '' : 's'}',
-                      style: text.titleSmall?.copyWith(
-                        color: TesseraColors.inkSoft,
-                      ),
-                    ),
-                  ),
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.hintsUsed,
-                    builder: (context, used, _) => TextButton.icon(
-                      onPressed: _game.useHint,
-                      icon: const Icon(Icons.lightbulb_outline),
-                      label: Text(used == 0 ? 'Hint' : 'Hint ($used)'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      status: ValueListenableBuilder<int>(
+        valueListenable: _game.mistakes,
+        builder: (context, m, _) => StatusPill(
+          icon: m == 0 ? Icons.verified_rounded : Icons.heart_broken_rounded,
+          text: m == 0 ? 'No cracks' : '$m crack${m == 1 ? '' : 's'}',
         ),
       ),
+      tools: [
+        ValueListenableBuilder<int>(
+          valueListenable: _game.hintsUsed,
+          builder: (context, used, _) => ToolButton(
+            icon: Icons.lightbulb_rounded,
+            label: 'Hint',
+            badge: used,
+            color: TesseraColors.terracotta,
+            onPressed: _game.useHint,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,9 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/kiln_path/kiln_path_game.dart';
 import '../theme/tessera_colors.dart';
+import '../theme/puzzle_style.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/puzzle_scaffold.dart';
 import '../widgets/solved_card.dart';
 
 /// Hosts a [KilnPathGame] with its actions as Flutter widgets.
@@ -48,83 +51,54 @@ class _KilnPathScreenState extends State<KilnPathScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final total = _game.board.puzzle.cellCount;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: 'Start over',
-            icon: const Icon(Icons.refresh),
-            onPressed: _game.restart,
+    return PuzzleScaffold(
+      title: widget.title,
+      rule:
+          'Drag one line from 1 through every tile, '
+          'passing the numbers in order.',
+      accent: PuzzleKind.kilnPath.accent,
+      onRestart: _game.restart,
+      board: Center(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: GameWidget<KilnPathGame>(
+            game: _game,
+            overlayBuilderMap: {
+              KilnPathGame.solvedOverlay: (context, game) => SolvedCard(
+                hintsUsed: game.hintsUsed.value,
+                clue: ShadedGridClue(
+                  shaded: game.board.puzzle.keystoneShading(),
+                ),
+              ),
+            },
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: Text(
-                'Drag one line from 1 through every tile, '
-                'passing the numbers in order.',
-                textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: TesseraColors.inkSoft),
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: GameWidget<KilnPathGame>(
-                    game: _game,
-                    overlayBuilderMap: {
-                      KilnPathGame.solvedOverlay: (context, game) => SolvedCard(
-                        hintsUsed: game.hintsUsed.value,
-                        clue: ShadedGridClue(
-                          shaded: game.board.puzzle.keystoneShading(),
-                        ),
-                      ),
-                    },
-                  ),
-                ),
-              ),
-            ),
-            ValueListenableBuilder<int>(
-              valueListenable: _game.lineLength,
-              builder: (context, length, _) => Text(
-                '$length / $total tiles',
-                style: text.titleSmall?.copyWith(
-                  color: TesseraColors.inkSoft,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton.icon(
-                    onPressed: _game.undo,
-                    icon: const Icon(Icons.undo),
-                    label: const Text('Undo'),
-                  ),
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.hintsUsed,
-                    builder: (context, used, _) => TextButton.icon(
-                      onPressed: _game.useHint,
-                      icon: const Icon(Icons.lightbulb_outline),
-                      label: Text(used == 0 ? 'Hint' : 'Hint ($used)'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
+      status: ValueListenableBuilder<int>(
+        valueListenable: _game.lineLength,
+        builder: (context, length, _) => StatusPill(
+          icon: Icons.local_fire_department_rounded,
+          text: '$length / $total tiles',
+        ),
+      ),
+      tools: [
+        ToolButton(
+          icon: Icons.undo_rounded,
+          label: 'Undo',
+          onPressed: _game.undo,
+        ),
+        ValueListenableBuilder<int>(
+          valueListenable: _game.hintsUsed,
+          builder: (context, used, _) => ToolButton(
+            icon: Icons.lightbulb_rounded,
+            label: 'Hint',
+            badge: used,
+            color: TesseraColors.terracotta,
+            onPressed: _game.useHint,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 
-import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import 'glaze_game.dart';
 import 'glaze_tile_component.dart';
 
@@ -13,8 +13,8 @@ class GlazeBoardComponent extends PositionComponent
     with HasGameReference<GlazeGame> {
   GlazeBoardComponent() : super(anchor: Anchor.center);
 
-  static const _tileGap = 3.0;
-  static const _boxGap = 5.0;
+  static const _tileGap = 4.0;
+  static const _boxGap = 8.0;
 
   final List<GlazeTileComponent> _tiles = [];
 
@@ -65,20 +65,8 @@ class GlazeBoardComponent extends PositionComponent
     }
   }
 
-  static final _groutPaint = Paint()..color = TesseraColors.grout;
-  static final _shadowPaint = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.12)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
   @override
-  void render(Canvas canvas) {
-    final rect = RRect.fromRectAndRadius(
-      size.toRect(),
-      const Radius.circular(12),
-    );
-    canvas.drawRRect(rect.shift(const Offset(0, 3)), _shadowPaint);
-    canvas.drawRRect(rect, _groutPaint);
-  }
+  void render(Canvas canvas) => Ceramic.plate(canvas, size.toRect());
 
   /// "Kiln firing": a quick ripple across the tiles on solve, under 600 ms.
   void fire({void Function()? onComplete}) {

@@ -7,6 +7,8 @@ import 'package:flame/events.dart';
 import 'package:flutter/painting.dart' show TextStyle, FontWeight, FontFeature;
 
 import '../../theme/tessera_colors.dart';
+import '../../theme/tessera_theme.dart';
+import '../common/ceramic.dart';
 import '../common/effects.dart';
 import 'seams_game.dart';
 
@@ -102,20 +104,8 @@ class SeamsBoardComponent extends PositionComponent
     game.end();
   }
 
-  static final _groutPaint = Paint()..color = TesseraColors.grout;
-  static final _shadowPaint = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.12)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
   @override
-  void render(Canvas canvas) {
-    final rect = RRect.fromRectAndRadius(
-      size.toRect(),
-      const Radius.circular(12),
-    );
-    canvas.drawRRect(rect.shift(const Offset(0, 3)), _shadowPaint);
-    canvas.drawRRect(rect, _groutPaint);
-  }
+  void render(Canvas canvas) => Ceramic.plate(canvas, size.toRect());
 
   /// "Kiln firing": each seam ripples from shard to shard, under 600 ms.
   void fire({void Function()? onComplete}) {
@@ -149,19 +139,20 @@ class SeamsTileComponent extends PositionComponent
 
   void press() => add(pressEffect());
 
-  static final _fill = Paint();
-
   @override
   void render(Canvas canvas) {
     final board = game.board;
     final shard = board.puzzle.endpoints[index] != 0;
     final owner = shard ? 0 : board.ownerAt(index);
-    _fill.color = owner == 0
-        ? TesseraColors.clayLight
-        : Color.lerp(TesseraColors.clayLight, TesseraColors.glaze(owner), 0.2)!;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(size.toRect(), Radius.circular(size.x * 0.16)),
-      _fill,
+    Ceramic.tile(
+      canvas,
+      size.toRect(),
+      owner == 0
+          ? TesseraColors.bisque
+          : Color.lerp(TesseraColors.bisque, TesseraColors.glaze(owner), 0.3)!,
+      gloss: 0,
+      depth: 0.06,
+      pressed: owner != 0,
     );
   }
 }
@@ -180,7 +171,12 @@ class _SeamsOverlay extends Component
     ..style = PaintingStyle.stroke
     ..strokeCap = StrokeCap.round
     ..strokeJoin = StrokeJoin.round;
-  static final _fill = Paint();
+  static final _goldGlow = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round
+    ..color = TesseraColors.gold.withValues(alpha: 0.5)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
   static final _ring = Paint()
     ..style = PaintingStyle.stroke
     ..color = TesseraColors.gold;
@@ -200,6 +196,8 @@ class _SeamsOverlay extends Component
         final c = parent.centreOf(seam[i]);
         i == 0 ? path.moveTo(c.x, c.y) : path.lineTo(c.x, c.y);
       }
+      _goldGlow.strokeWidth = tile * 0.4;
+      canvas.drawPath(path, _goldGlow);
       _gold.strokeWidth = tile * 0.26;
       canvas.drawPath(path, _gold);
       _core
@@ -217,13 +215,12 @@ class _SeamsOverlay extends Component
       canvas.save();
       canvas.translate(c.dx, c.dy);
       canvas.rotate(0.25);
-      _fill.color = TesseraColors.glaze(pair);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: 2 * r, height: 2 * r),
-          Radius.circular(r * 0.35),
-        ),
-        _fill,
+      Ceramic.tile(
+        canvas,
+        Rect.fromCenter(center: Offset.zero, width: 2 * r, height: 2 * r),
+        TesseraColors.glaze(pair),
+        radius: 0.3,
+        depth: 0.12,
       );
       if (board.isJoined(pair)) {
         _ring.strokeWidth = 2.5;
@@ -242,6 +239,7 @@ class _SeamsOverlay extends Component
       canvas.restore();
       TextPaint(
         style: TextStyle(
+          fontFamily: TesseraFonts.body,
           fontSize: r * 1.0,
           fontWeight: FontWeight.w800,
           color: TesseraColors.onGlaze(pair),

@@ -1,9 +1,11 @@
 import 'package:flame/game.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
+import '../../juice/juice.dart';
 import '../../theme/tessera_colors.dart';
+import '../common/effects.dart';
 import 'glaze_board_component.dart';
 
 /// Flame game for one Glaze board.
@@ -29,7 +31,7 @@ class GlazeGame extends FlameGame {
   late final GlazeBoardComponent boardComponent;
 
   @override
-  Color backgroundColor() => TesseraColors.clay;
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {
@@ -61,13 +63,13 @@ class GlazeGame extends FlameGame {
   void placeGlaze(int value) {
     final i = selected.value;
     if (i == null || solved.value || !board.place(i, value)) return;
-    _changed(i);
+    _changed(i, placed: true);
   }
 
   void erase() {
     final i = selected.value;
     if (i == null || solved.value || !board.clear(i)) return;
-    _changed(i);
+    _changed(i, erased: true);
   }
 
   GlazeHint? useHint() {
@@ -77,7 +79,7 @@ class GlazeGame extends FlameGame {
     board.place(hint.index, hint.value);
     hintsUsed.value++;
     selected.value = hint.index;
-    _changed(hint.index);
+    _changed(hint.index, placed: true);
     return hint;
   }
 
@@ -89,22 +91,39 @@ class GlazeGame extends FlameGame {
     _refresh();
   }
 
-  void _changed(int index) {
+  void _changed(int index, {bool placed = false, bool erased = false}) {
     _refresh();
-    boardComponent.tileAt(index).press();
-    _tap();
+    final tile = boardComponent.tileAt(index);
+    tile.press();
     if (board.isSolved) {
       solved.value = true;
       selected.value = null;
-      if (haptics) HapticFeedback.mediumImpact();
+      if (haptics) Juice.solve();
       boardComponent.fire(onComplete: () => overlays.add(solvedOverlay));
+      celebrate(this, size / 2, boardComponent.size.x / 2);
+      return;
+    }
+    if (placed && conflicts.contains(index)) {
+      if (haptics) Juice.error();
+      boardComponent.add(shakeEffect());
+    } else if (placed) {
+      if (haptics) Juice.place();
+      boardComponent.add(
+        chipPuff(
+          tile.position,
+          TesseraColors.glaze(board.valueAt(index)),
+          size: tile.size.x,
+        ),
+      );
+    } else if (erased) {
+      if (haptics) Juice.erase();
     }
   }
 
   void _refresh() => _conflicts = board.conflicts();
 
   void _tap() {
-    if (haptics) HapticFeedback.selectionClick();
+    if (haptics) Juice.tap();
   }
 
   @override

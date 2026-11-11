@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import 'pebbles_game.dart';
 import 'pebbles_tile_component.dart';
 
@@ -15,7 +16,7 @@ class PebblesBoardComponent extends PositionComponent
   PebblesBoardComponent() : super(anchor: Anchor.center);
 
   static const _pad = 4.0;
-  static const _tileGap = 2.0;
+  static const _tileGap = 3.0;
 
   final List<PebblesTileComponent> _tiles = [];
   double _tile = 0;
@@ -26,7 +27,7 @@ class PebblesBoardComponent extends PositionComponent
   /// never the only cue.
   static final _tints = [
     for (final g in TesseraColors.glazes)
-      Color.lerp(TesseraColors.clayLight, g, 0.28)!,
+      Color.lerp(TesseraColors.bisque, g, 0.42)!,
   ];
 
   late final List<int> _regionColour = _colourRegions();
@@ -98,20 +99,8 @@ class PebblesBoardComponent extends PositionComponent
     }
   }
 
-  static final _groutPaint = Paint()..color = TesseraColors.grout;
-  static final _shadowPaint = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.12)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
   @override
-  void render(Canvas canvas) {
-    final rect = RRect.fromRectAndRadius(
-      size.toRect(),
-      const Radius.circular(12),
-    );
-    canvas.drawRRect(rect.shift(const Offset(0, 3)), _shadowPaint);
-    canvas.drawRRect(rect, _groutPaint);
-  }
+  void render(Canvas canvas) => Ceramic.plate(canvas, size.toRect());
 
   /// "Kiln firing": the pebbles pulse, then a ripple crosses the board.
   void fire({void Function()? onComplete}) {
@@ -138,7 +127,7 @@ class PebblesBoardComponent extends PositionComponent
 class _RegionBorders extends Component
     with HasGameReference<PebblesGame>, ParentIsA<PebblesBoardComponent> {
   static final _paint = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.8)
+    ..color = TesseraColors.gold
     ..strokeCap = StrokeCap.round;
 
   @override
@@ -147,7 +136,7 @@ class _RegionBorders extends Component
     final n = p.size;
     final pitch = parent.pitch;
     final pad = parent.pad;
-    _paint.strokeWidth = math.max(2.5, pitch * 0.07);
+    _paint.strokeWidth = math.max(3.0, pitch * 0.06);
     // Grid line k sits in the gap before row/column k.
     double line(int k) => pad + k * pitch - PebblesBoardComponent._tileGap / 2;
     for (var r = 0; r < n; r++) {

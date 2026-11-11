@@ -7,9 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 import 'package:tessera/app.dart';
 import 'package:tessera/game/pebbles/pebbles_game.dart';
+import 'package:tessera/juice/juice.dart';
 
 void main() {
   setUp(() {
+    // No audio plugin under test.
+    Juice.muted = true;
     // An iPhone-sized surface so the whole tray is laid out.
     final view =
         TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
@@ -50,6 +53,9 @@ void main() {
 
   testWidgets('opens Kiln Path from the home screen', (tester) async {
     await tester.pumpWidget(TesseraApp(today: DateTime(2026, 11, 11)));
+    // Practice sits below the keystone, so scroll to it first.
+    await tester.ensureVisible(find.text('Kiln Path'));
+    await tester.pump();
     await tester.tap(find.text('Kiln Path'));
     // The Flame loop never settles, so pump past the route transition.
     for (var i = 0; i < 10; i++) {

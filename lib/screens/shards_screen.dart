@@ -4,6 +4,9 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/shards/shards_game.dart';
 import '../theme/tessera_colors.dart';
+import '../theme/puzzle_style.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/puzzle_scaffold.dart';
 import '../widgets/solved_card.dart';
 
 /// Hosts a [ShardsGame] with its actions as Flutter widgets.
@@ -48,74 +51,45 @@ class _ShardsScreenState extends State<ShardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final total = _game.board.shardCount;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: 'Start over',
-            icon: const Icon(Icons.refresh),
-            onPressed: _game.restart,
+    return PuzzleScaffold(
+      title: widget.title,
+      rule:
+          'Drag every shard onto the plate to rebuild it. '
+          'Tap a shard to turn it.',
+      accent: PuzzleKind.shards.accent,
+      onRestart: _game.restart,
+      board: GameWidget<ShardsGame>(
+        game: _game,
+        overlayBuilderMap: {
+          ShardsGame.solvedOverlay: (context, game) => SolvedCard(
+            hintsUsed: game.hintsUsed.value,
+            clue: ShadedGridClue(
+              shaded: game.board.puzzle.keystoneShard(),
+              color: TesseraColors.gold,
+            ),
           ),
-        ],
+        },
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: Text(
-                'Drag every shard onto the plate to rebuild it. '
-                'Tap a shard to turn it.',
-                textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: TesseraColors.inkSoft),
-              ),
-            ),
-            Expanded(
-              child: GameWidget<ShardsGame>(
-                game: _game,
-                overlayBuilderMap: {
-                  ShardsGame.solvedOverlay: (context, game) => SolvedCard(
-                    hintsUsed: game.hintsUsed.value,
-                    clue: ShadedGridClue(
-                      shaded: game.board.puzzle.keystoneShard(),
-                      color: TesseraColors.gold,
-                    ),
-                  ),
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.placed,
-                    builder: (context, placed, _) => Text(
-                      '$placed / $total shards',
-                      style: text.titleSmall?.copyWith(
-                        color: TesseraColors.inkSoft,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.hintsUsed,
-                    builder: (context, used, _) => TextButton.icon(
-                      onPressed: _game.useHint,
-                      icon: const Icon(Icons.lightbulb_outline),
-                      label: Text(used == 0 ? 'Hint' : 'Hint ($used)'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      status: ValueListenableBuilder<int>(
+        valueListenable: _game.placed,
+        builder: (context, placed, _) => StatusPill(
+          icon: Icons.extension_rounded,
+          text: '$placed / $total shards',
         ),
       ),
+      tools: [
+        ValueListenableBuilder<int>(
+          valueListenable: _game.hintsUsed,
+          builder: (context, used, _) => ToolButton(
+            icon: Icons.lightbulb_rounded,
+            label: 'Hint',
+            badge: used,
+            color: TesseraColors.terracotta,
+            onPressed: _game.useHint,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flame/game.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
-import '../../theme/tessera_colors.dart';
+import '../../juice/juice.dart';
+import '../common/effects.dart';
 import 'cutouts_components.dart';
 
 /// Flame game for one Cutouts puzzle.
@@ -29,7 +30,7 @@ class CutoutsGame extends FlameGame {
   final List<OptionComponent> options = [];
 
   @override
-  Color backgroundColor() => TesseraColors.clay;
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {
@@ -88,10 +89,12 @@ class CutoutsGame extends FlameGame {
     mistakes.value = board.mistakes;
     if (right) {
       solved.value = true;
-      if (haptics) HapticFeedback.mediumImpact();
+      if (haptics) Juice.solve();
       options[option].fire(onComplete: () => overlays.add(solvedOverlay));
-    } else if (haptics) {
-      HapticFeedback.heavyImpact();
+      celebrate(this, options[option].position, options[option].size.x);
+    } else {
+      if (haptics) Juice.error();
+      options[option].add(shakeEffect());
     }
     return right;
   }
@@ -103,7 +106,7 @@ class CutoutsGame extends FlameGame {
     board.apply(h);
     hintsUsed.value++;
     options[h].press();
-    if (haptics) HapticFeedback.selectionClick();
+    if (haptics) Juice.erase();
     return h;
   }
 
