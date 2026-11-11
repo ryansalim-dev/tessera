@@ -6,11 +6,14 @@ import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/painting.dart' show TextStyle, FontWeight, FontFeature;
-import 'package:flutter/services.dart';
+import 'package:flutter/painting.dart'
+    show TextStyle, FontWeight, FontFeature, Shadow;
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../../juice/juice.dart';
+import '../../theme/tessera_theme.dart';
+import '../common/ceramic.dart';
 import '../common/effects.dart';
 
 /// Flame game for the day's keystone: a 5x5 grid where every row and
@@ -35,15 +38,17 @@ class KeystoneGame extends FlameGame {
   Set<int> get conflicts => _conflicts;
 
   final List<KeystoneTileComponent> tiles = [];
+  final _plate = _KeystonePlate();
 
   @override
-  Color backgroundColor() => TesseraColors.clay;
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {
     for (var i = 0; i < KeystonePuzzle.cellCount; i++) {
       tiles.add(KeystoneTileComponent(i));
     }
+    await add(_plate);
     await addAll(tiles);
     _layout(size);
   }
@@ -61,6 +66,9 @@ class KeystoneGame extends FlameGame {
     final side = math.max(0.0, math.min(size.x, size.y) - 16);
     final tile = math.max(0.0, (side - (n + 1) * _gap) / n);
     final origin = (size - Vector2.all(side)) / 2;
+    _plate
+      ..position = origin
+      ..size = Vector2.all(side);
     for (var i = 0; i < tiles.length; i++) {
       tiles[i]
         ..size = Vector2.all(tile)
@@ -76,19 +84,19 @@ class KeystoneGame extends FlameGame {
   void selectTile(int index) {
     if (solved.value) return;
     selected.value = index;
-    if (haptics) HapticFeedback.selectionClick();
+    if (haptics) Juice.tap();
   }
 
   void placeGlaze(int value) {
     final i = selected.value;
     if (i == null || solved.value || !board.place(i, value)) return;
-    _changed(i);
+    _changed(i, placed: true);
   }
 
   void erase() {
     final i = selected.value;
     if (i == null || solved.value || !board.clear(i)) return;
-    _changed(i);
+    _changed(i, erased: true);
   }
 
   void useHint() {
@@ -98,7 +106,7 @@ class KeystoneGame extends FlameGame {
     board.place(h.$1, h.$2);
     hintsUsed.value++;
     selected.value = h.$1;
-    _changed(h.$1);
+    _changed(h.$1, placed: true);
   }
 
   void restart() {
@@ -109,15 +117,31 @@ class KeystoneGame extends FlameGame {
     _conflicts = board.conflicts();
   }
 
-  void _changed(int index) {
+  void _changed(int index, {bool placed = false, bool erased = false}) {
     _conflicts = board.conflicts();
-    tiles[index].add(pressEffect());
-    if (haptics) HapticFeedback.selectionClick();
+    final tile = tiles[index]..add(pressEffect());
     if (board.isSolved) {
       solved.value = true;
       selected.value = null;
-      if (haptics) HapticFeedback.heavyImpact();
+      if (haptics) Juice.keystone();
       _assemble();
+      celebrate(this, _plate.center, _plate.size.x * 0.6);
+      return;
+    }
+    if (placed && _conflicts.contains(index)) {
+      if (haptics) Juice.error();
+      tile.add(shakeEffect());
+    } else if (placed) {
+      if (haptics) Juice.place();
+      add(
+        chipPuff(
+          tile.position,
+          TesseraColors.glaze(board.valueAt(index)),
+          size: tile.size.x,
+        ),
+      );
+    } else if (erased && haptics) {
+      Juice.erase();
     }
   }
 
@@ -163,30 +187,52 @@ class KeystoneTileComponent extends PositionComponent
   @override
   void onTapDown(TapDownEvent event) => game.selectTile(index);
 
-  static final _fill = Paint();
   static final _stroke = Paint()..style = PaintingStyle.stroke;
 
   @override
   void render(Canvas canvas) {
     final board = game.board;
     final value = board.valueAt(index);
-    final radius = Radius.circular(size.x * 0.16);
-    final rect = RRect.fromRectAndRadius(size.toRect(), radius);
-
-    _fill.color = value == 0
-        ? TesseraColors.clayLight
-        : TesseraColors.glaze(value);
-    canvas.drawRRect(rect, _fill);
+    final selected = game.selected.value == index;
+    final pressed = value == 0 && selected;
+    if (value == 0) {
+      Ceramic.tile(
+        canvas,
+        size.toRect(),
+        TesseraColors.bisque,
+        gloss: 0,
+        depth: 0.06,
+        pressed: pressed,
+      );
+    } else {
+      Ceramic.tile(canvas, size.toRect(), TesseraColors.glaze(value));
+    }
+    final face = Ceramic.faceOf(
+      size.toRect(),
+      depth: value == 0 ? 0.06 : 0.08,
+      pressed: pressed,
+    );
+    final radius = Radius.circular(size.x * 0.18);
+    final rect = RRect.fromRectAndRadius(face, radius);
 
     if (value != 0) {
       TextPaint(
         style: TextStyle(
+          fontFamily: TesseraFonts.body,
+          shadows: const [
+            Shadow(color: Color(0x40000000), offset: Offset(0, 1.5)),
+          ],
           fontSize: size.y * 0.48,
           fontWeight: board.isGiven(index) ? FontWeight.w800 : FontWeight.w500,
           color: TesseraColors.onGlaze(value),
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
-      ).render(canvas, '$value', size / 2, anchor: Anchor.center);
+      ).render(
+        canvas,
+        '$value',
+        Vector2(face.center.dx, face.center.dy),
+        anchor: Anchor.center,
+      );
     }
 
     if (board.isGiven(index)) {
@@ -196,7 +242,7 @@ class KeystoneTileComponent extends PositionComponent
         ..strokeWidth = 4
         ..color = source != null && !lent
             ? game.rims[source] ?? TesseraColors.ink
-            : TesseraColors.ink.withValues(alpha: 0.35);
+            : TesseraColors.chalk.withValues(alpha: 0.7);
       if (lent) {
         // Dashed rim: a lent tile, not earned.
         final r = rect.deflate(3).outerRect;
@@ -235,11 +281,22 @@ class KeystoneTileComponent extends PositionComponent
         ..strokeWidth = 3;
       canvas.drawRRect(rect.deflate(1.5), _stroke);
     }
-    if (game.selected.value == index) {
+    if (selected) {
       _stroke
-        ..color = TesseraColors.gold
+        ..color = TesseraColors.emberGlow
         ..strokeWidth = 3.5;
-      canvas.drawRRect(rect.inflate(1), _stroke);
+      canvas.drawRRect(rect.inflate(1.5), _stroke);
     }
+  }
+}
+
+/// The kiln shelf under the keystone grid.
+class _KeystonePlate extends PositionComponent {
+  _KeystonePlate() : super(priority: -1);
+
+  @override
+  void render(Canvas canvas) {
+    if (size.x <= 0) return;
+    Ceramic.plate(canvas, size.toRect());
   }
 }

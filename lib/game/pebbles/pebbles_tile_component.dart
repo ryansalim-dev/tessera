@@ -5,6 +5,7 @@ import 'package:flame/events.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import '../common/effects.dart';
 import 'pebbles_game.dart';
 
@@ -27,12 +28,19 @@ class PebblesTileComponent extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    final radius = Radius.circular(size.x * 0.12);
-    final rect = RRect.fromRectAndRadius(size.toRect(), radius);
-    _fill.color = game.boardComponent.tintAt(index);
-    canvas.drawRRect(rect, _fill);
+    final face = Ceramic.faceOf(size.toRect(), depth: 0.06);
+    final radius = Radius.circular(size.x * 0.14);
+    final rect = RRect.fromRectAndRadius(face, radius);
+    Ceramic.tile(
+      canvas,
+      size.toRect(),
+      game.boardComponent.tintAt(index),
+      radius: 0.14,
+      depth: 0.06,
+      gloss: 0.4,
+    );
 
-    final centre = Offset(size.x / 2, size.y / 2);
+    final centre = face.center;
     switch (game.board.markAt(index)) {
       case PebbleMark.empty:
         break;

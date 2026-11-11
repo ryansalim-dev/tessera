@@ -2,36 +2,61 @@ import 'package:flutter/material.dart';
 
 import 'tessera_colors.dart';
 
+/// Type families bundled in `assets/fonts` (SIL OFL 1.1).
+abstract final class TesseraFonts {
+  /// Soft, wonky serif for titles and big moments.
+  static const display = 'Fraunces';
+
+  /// Rounded sans for everything else, including digits on tiles.
+  static const body = 'Nunito';
+}
+
 abstract final class TesseraTheme {
-  static ThemeData light() {
+  static ThemeData studio() {
     final scheme =
         ColorScheme.fromSeed(
           seedColor: TesseraColors.terracotta,
-          surface: TesseraColors.clay,
+          brightness: Brightness.dark,
+          surface: TesseraColors.nightHigh,
         ).copyWith(
-          primary: TesseraColors.terracotta,
+          primary: TesseraColors.ember,
+          onPrimary: TesseraColors.night,
           secondary: TesseraColors.cobalt,
           tertiary: TesseraColors.gold,
-          onSurface: TesseraColors.ink,
+          onSurface: TesseraColors.chalk,
         );
+    final base = Typography.whiteCupertino.apply(
+      fontFamily: TesseraFonts.body,
+      bodyColor: TesseraColors.chalk,
+      displayColor: TesseraColors.chalk,
+    );
+    TextStyle? serif(TextStyle? s) => s?.copyWith(
+      fontFamily: TesseraFonts.display,
+      fontWeight: FontWeight.w800,
+    );
     return ThemeData(
       colorScheme: scheme,
-      scaffoldBackgroundColor: TesseraColors.clay,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: TesseraColors.clay,
-        foregroundColor: TesseraColors.ink,
-        elevation: 0,
-        scrolledUnderElevation: 0,
+      fontFamily: TesseraFonts.body,
+      scaffoldBackgroundColor: TesseraColors.night,
+      textTheme: base.copyWith(
+        displayLarge: serif(base.displayLarge),
+        displayMedium: serif(base.displayMedium),
+        displaySmall: serif(base.displaySmall),
+        headlineLarge: serif(base.headlineLarge),
+        headlineMedium: serif(base.headlineMedium),
+        headlineSmall: serif(base.headlineSmall),
+        titleLarge: serif(base.titleLarge),
       ),
-      cardTheme: CardThemeData(
-        color: TesseraColors.clayLight,
-        elevation: 1.5,
-        shadowColor: TesseraColors.ink.withValues(alpha: 0.25),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      textTheme: Typography.blackCupertino.apply(
-        bodyColor: TesseraColors.ink,
-        displayColor: TesseraColors.ink,
+      splashFactory: NoSplash.splashFactory,
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: TesseraColors.shelfDark,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: const TextStyle(
+          fontFamily: TesseraFonts.body,
+          color: TesseraColors.chalk,
+        ),
       ),
     );
   }

@@ -6,15 +6,16 @@ import 'package:flame/events.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import '../common/effects.dart';
 import 'cutouts_game.dart';
 
-final _clay = Paint()..color = TesseraColors.clayLight;
-final _ghost = Paint()..color = TesseraColors.grout.withValues(alpha: 0.5);
+final _clay = Paint()..color = TesseraColors.bisque;
+final _ghost = Paint()..color = const Color(0x1AFFFFFF);
 final _edge = Paint()
   ..style = PaintingStyle.stroke
   ..strokeWidth = 1.5
-  ..color = TesseraColors.groutDark;
+  ..color = TesseraColors.shelfDark;
 final _grid = Paint()
   ..strokeWidth = 0.75
   ..color = TesseraColors.grout;
@@ -22,9 +23,9 @@ final _hole = Paint()..color = TesseraColors.ink;
 final _stamp = Paint()..color = TesseraColors.cobalt;
 final _fold = Paint()
   ..style = PaintingStyle.stroke
-  ..strokeWidth = 2
+  ..strokeWidth = 2.5
   ..strokeCap = StrokeCap.round
-  ..color = TesseraColors.terracotta;
+  ..color = TesseraColors.ember;
 
 /// One frame of the folding story: the sheet before fold [index] (with the
 /// fold line and an arrow), or, for the last frame, the folded sheet with
@@ -141,18 +142,17 @@ class OptionComponent extends PositionComponent
   @override
   void onTapDown(TapDownEvent event) => game.pick(index);
 
-  static final _card = Paint()..color = TesseraColors.grout;
   static final _shadow = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.12)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    ..color = const Color(0x88000000)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
   static final _ring = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 4;
   static final _crack = Paint()
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
+    ..strokeWidth = 3.5
     ..strokeCap = StrokeCap.round
-    ..color = TesseraColors.terracotta;
+    ..color = const Color(0xFFE5483B);
 
   @override
   void render(Canvas canvas) {
@@ -164,12 +164,19 @@ class OptionComponent extends PositionComponent
       size.toRect(),
       const Radius.circular(12),
     );
-    canvas.drawRRect(card.shift(const Offset(0, 3)), _shadow);
-    canvas.drawRRect(card, _card);
+    canvas.drawRRect(card.shift(const Offset(0, 6)), _shadow);
+    Ceramic.tile(
+      canvas,
+      size.toRect(),
+      TesseraColors.shelfLight,
+      radius: 0.08,
+      depth: 0.04,
+      gloss: 0.3,
+    );
 
-    const pad = 8.0;
+    const pad = 9.0;
     final n = p.size;
-    final cell = (size.x - 2 * pad) / n;
+    final cell = (size.x - 2 * pad - 4) / n;
     final sheet = Rect.fromLTWH(pad, pad, n * cell, n * cell);
     canvas.drawRect(sheet, _clay);
     for (var k = 1; k < n; k++) {
@@ -196,7 +203,7 @@ class OptionComponent extends PositionComponent
       // Faded and cracked: ruled out.
       canvas.drawRRect(
         card,
-        Paint()..color = TesseraColors.clay.withValues(alpha: 0.6),
+        Paint()..color = TesseraColors.night.withValues(alpha: 0.65),
       );
       final path = Path()
         ..moveTo(size.x * 0.2, size.y * 0.15)

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'screens/today_screen.dart';
-import 'theme/tessera_colors.dart';
 import 'theme/tessera_theme.dart';
 
 class TesseraApp extends StatelessWidget {
@@ -15,10 +14,10 @@ class TesseraApp extends StatelessWidget {
     return MaterialApp(
       title: 'Tessera',
       debugShowCheckedModeBanner: false,
-      theme: TesseraTheme.light(),
+      theme: TesseraTheme.studio(),
       // Keep a phone-shaped column on tablets and wide browser windows.
       builder: (context, child) => ColoredBox(
-        color: TesseraColors.grout,
+        color: const Color(0xFF0E0908),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),

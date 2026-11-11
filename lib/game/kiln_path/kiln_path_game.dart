@@ -1,9 +1,10 @@
 import 'package:flame/game.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
-import '../../theme/tessera_colors.dart';
+import '../../juice/juice.dart';
+import '../common/effects.dart';
 import 'kiln_path_board_component.dart';
 
 /// Flame game for one Kiln Path board.
@@ -29,7 +30,7 @@ class KilnPathGame extends FlameGame {
   late final KilnPathBoardComponent boardComponent;
 
   @override
-  Color backgroundColor() => TesseraColors.clay;
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {
@@ -109,13 +110,21 @@ class KilnPathGame extends FlameGame {
   }
 
   void _changed() {
+    final grew = board.length > lineLength.value;
     lineLength.value = board.length;
     boardComponent.tileAt(board.head).press();
-    if (haptics) HapticFeedback.selectionClick();
     if (board.isSolved) {
       solved.value = true;
-      if (haptics) HapticFeedback.mediumImpact();
+      if (haptics) Juice.solve();
       boardComponent.fire(onComplete: () => overlays.add(solvedOverlay));
+      celebrate(this, size / 2, boardComponent.size.x / 2);
+      return;
+    }
+    if (!haptics) return;
+    if (grew) {
+      Juice.place(step: board.length);
+    } else {
+      Juice.erase();
     }
   }
 

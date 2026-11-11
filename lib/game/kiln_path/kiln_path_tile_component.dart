@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import '../common/effects.dart';
 import 'kiln_path_game.dart';
 
@@ -17,21 +18,23 @@ class KilnPathTileComponent extends PositionComponent
 
   void press() => add(pressEffect());
 
-  static final _fill = Paint();
-
-  /// Fired clay: terracotta washed over the light clay.
+  /// Fired clay: terracotta washed over the bisque.
   static final _fired = Color.lerp(
-    TesseraColors.clayLight,
-    TesseraColors.terracotta,
-    0.22,
+    TesseraColors.bisque,
+    TesseraColors.ember,
+    0.45,
   )!;
 
   @override
   void render(Canvas canvas) {
-    _fill.color = game.board.contains(index) ? _fired : TesseraColors.clayLight;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(size.toRect(), Radius.circular(size.x * 0.16)),
-      _fill,
+    final fired = game.board.contains(index);
+    Ceramic.tile(
+      canvas,
+      size.toRect(),
+      fired ? _fired : TesseraColors.bisque,
+      gloss: fired ? 0.6 : 0,
+      depth: 0.07,
+      pressed: fired,
     );
   }
 }

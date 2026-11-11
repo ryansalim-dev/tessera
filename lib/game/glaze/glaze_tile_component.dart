@@ -2,9 +2,12 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
-import 'package:flutter/painting.dart' show TextStyle, FontWeight, FontFeature;
+import 'package:flutter/painting.dart'
+    show TextStyle, FontWeight, FontFeature, Shadow;
 
 import '../../theme/tessera_colors.dart';
+import '../../theme/tessera_theme.dart';
+import '../common/ceramic.dart';
 import '../common/effects.dart';
 import 'glaze_game.dart';
 
@@ -22,7 +25,6 @@ class GlazeTileComponent extends PositionComponent
 
   static final _fill = Paint();
   static final _stroke = Paint()..style = PaintingStyle.stroke;
-  static final _shine = Paint()..color = const Color(0x33FFFFFF);
 
   bool _isPeerOfSelection() {
     final s = game.selected.value;
@@ -40,47 +42,62 @@ class GlazeTileComponent extends PositionComponent
     final given = board.isGiven(index);
     final selected = game.selected.value == index;
     final conflict = game.conflicts.contains(index);
-    final radius = Radius.circular(size.x * 0.16);
-    final rect = RRect.fromRectAndRadius(size.toRect(), radius);
+    final bounds = size.toRect();
 
-    _fill.color = value == 0
-        ? (_isPeerOfSelection()
-              ? const Color(0xFFF1E7D8)
-              : TesseraColors.clayLight)
-        : TesseraColors.glaze(value);
-    canvas.drawRRect(rect, _fill);
+    if (value == 0) {
+      // Unglazed bisque, lit warmer along the selected row, column and box.
+      Ceramic.tile(
+        canvas,
+        bounds,
+        _isPeerOfSelection() ? _peer : TesseraColors.bisque,
+        gloss: 0,
+        depth: 0.06,
+        pressed: selected,
+      );
+    } else {
+      Ceramic.tile(
+        canvas,
+        bounds,
+        TesseraColors.glaze(value),
+        depth: given ? 0.1 : 0.07,
+      );
+    }
+    final face = Ceramic.faceOf(
+      bounds,
+      depth: value == 0 ? 0.06 : (given ? 0.1 : 0.07),
+      pressed: value == 0 && selected,
+    );
+    final radius = Radius.circular(size.x * 0.18);
+    final rect = RRect.fromRectAndRadius(face, radius);
 
     if (value != 0) {
-      // Glaze highlight along the top edge.
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            size.x * 0.1,
-            size.y * 0.08,
-            size.x * 0.8,
-            size.y * 0.22,
-          ),
-          radius,
-        ),
-        _shine,
-      );
       final text = TextPaint(
         style: TextStyle(
+          fontFamily: TesseraFonts.body,
           fontSize: size.y * 0.5,
-          fontWeight: given ? FontWeight.w800 : FontWeight.w500,
+          fontWeight: given ? FontWeight.w800 : FontWeight.w700,
           color: TesseraColors.onGlaze(value),
           fontFeatures: const [FontFeature.tabularFigures()],
+          shadows: const [
+            Shadow(color: Color(0x40000000), offset: Offset(0, 1.5)),
+          ],
         ),
       );
-      text.render(canvas, '$value', size / 2, anchor: Anchor.center);
+      text.render(
+        canvas,
+        '$value',
+        Vector2(face.center.dx, face.center.dy),
+        anchor: Anchor.center,
+      );
     }
 
     if (given) {
-      // Fired tiles get an inset rim so they read as fixed.
-      _stroke
-        ..color = TesseraColors.ink.withValues(alpha: 0.25)
-        ..strokeWidth = 1.5;
-      canvas.drawRRect(rect.deflate(3), _stroke);
+      // Fired tiles carry a maker's dot so they read as fixed.
+      canvas.drawCircle(
+        Offset(face.left + face.width * 0.17, face.bottom - face.height * 0.17),
+        size.x * 0.045,
+        _fill..color = TesseraColors.ink.withValues(alpha: 0.35),
+      );
     }
     if (conflict) {
       _stroke
@@ -88,16 +105,28 @@ class GlazeTileComponent extends PositionComponent
         ..strokeWidth = 3;
       canvas.drawRRect(rect.deflate(1.5), _stroke);
       canvas.drawCircle(
-        Offset(size.x * 0.82, size.y * 0.18),
-        size.x * 0.07,
-        _fill..color = TesseraColors.terracotta,
+        Offset(face.left + face.width * 0.82, face.top + face.height * 0.18),
+        size.x * 0.08,
+        _fill..color = const Color(0xFFE5483B),
       );
     }
     if (selected) {
+      _glow.color = TesseraColors.emberGlow.withValues(alpha: 0.55);
+      canvas.drawRRect(rect.inflate(3), _glow);
       _stroke
-        ..color = TesseraColors.gold
-        ..strokeWidth = 3.5;
-      canvas.drawRRect(rect.inflate(1), _stroke);
+        ..color = TesseraColors.emberGlow
+        ..strokeWidth = 3;
+      canvas.drawRRect(rect.inflate(1.5), _stroke);
     }
   }
+
+  static final _peer = Color.lerp(
+    TesseraColors.bisque,
+    TesseraColors.emberGlow,
+    0.28,
+  )!;
+  static final _glow = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 6
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
 }

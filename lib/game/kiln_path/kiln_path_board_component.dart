@@ -5,7 +5,7 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
 
-import '../../theme/tessera_colors.dart';
+import '../common/ceramic.dart';
 import 'kiln_path_game.dart';
 import 'kiln_path_line_component.dart';
 import 'kiln_path_tile_component.dart';
@@ -112,20 +112,8 @@ class KilnPathBoardComponent extends PositionComponent
     _lastDragCell = null;
   }
 
-  static final _groutPaint = Paint()..color = TesseraColors.grout;
-  static final _shadowPaint = Paint()
-    ..color = TesseraColors.ink.withValues(alpha: 0.12)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
   @override
-  void render(Canvas canvas) {
-    final rect = RRect.fromRectAndRadius(
-      size.toRect(),
-      const Radius.circular(12),
-    );
-    canvas.drawRRect(rect.shift(const Offset(0, 3)), _shadowPaint);
-    canvas.drawRRect(rect, _groutPaint);
-  }
+  void render(Canvas canvas) => Ceramic.plate(canvas, size.toRect());
 
   /// "Kiln firing": a ripple that follows the line from start to end, under
   /// 600 ms.

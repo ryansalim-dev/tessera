@@ -1,9 +1,11 @@
 import 'package:flame/game.dart';
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../../theme/tessera_colors.dart';
+import '../../juice/juice.dart';
+import '../common/effects.dart';
 import 'pebbles_board_component.dart';
 
 /// Flame game for one Pebbles board.
@@ -28,7 +30,7 @@ class PebblesGame extends FlameGame {
   late final PebblesBoardComponent boardComponent;
 
   @override
-  Color backgroundColor() => TesseraColors.clay;
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {
@@ -80,12 +82,29 @@ class PebblesGame extends FlameGame {
 
   void _changed(int cell) {
     _refresh();
-    boardComponent.tileAt(cell).press();
-    if (haptics) HapticFeedback.selectionClick();
+    final tile = boardComponent.tileAt(cell)..press();
     if (board.isSolved) {
       solved.value = true;
-      if (haptics) HapticFeedback.mediumImpact();
+      if (haptics) Juice.solve();
       boardComponent.fire(onComplete: () => overlays.add(solvedOverlay));
+      celebrate(this, size / 2, boardComponent.size.x / 2);
+      return;
+    }
+    switch (board.markAt(cell)) {
+      case PebbleMark.pebble:
+        if (conflicts.contains(cell)) {
+          if (haptics) Juice.error();
+          boardComponent.add(shakeEffect());
+        } else {
+          if (haptics) Juice.place();
+          boardComponent.add(
+            chipPuff(tile.position, TesseraColors.chalkSoft, size: tile.size.x),
+          );
+        }
+      case PebbleMark.dot:
+        if (haptics) Juice.tap();
+      case PebbleMark.empty:
+        if (haptics) Juice.erase();
     }
   }
 

@@ -4,6 +4,9 @@ import 'package:puzzle_core/puzzle_core.dart';
 
 import '../game/glaze/glaze_game.dart';
 import '../theme/tessera_colors.dart';
+import '../widgets/clay_button.dart';
+import '../widgets/glaze_palette.dart';
+import '../widgets/puzzle_scaffold.dart';
 import '../widgets/solved_card.dart';
 
 /// Hosts a [GlazeGame] with the glaze palette and actions as Flutter widgets.
@@ -49,110 +52,45 @@ class _GlazeScreenState extends State<GlazeScreen> {
   @override
   Widget build(BuildContext context) {
     final size = _game.board.size;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: 'Start over',
-            icon: const Icon(Icons.refresh),
-            onPressed: _game.restart,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: GameWidget<GlazeGame>(
-                    game: _game,
-                    overlayBuilderMap: {
-                      GlazeGame.solvedOverlay: (context, game) => SolvedCard(
-                        hintsUsed: game.hintsUsed.value,
-                        clue: GlazeDigitsClue(
-                          digits: game.board.puzzle.keystoneDiagonal,
-                        ),
-                      ),
-                    },
-                  ),
+    return PuzzleScaffold(
+      title: widget.title,
+      rule: 'Fill every row, column and box with each glaze once.',
+      accent: TesseraColors.celadon,
+      onRestart: _game.restart,
+      board: Center(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: GameWidget<GlazeGame>(
+            game: _game,
+            overlayBuilderMap: {
+              GlazeGame.solvedOverlay: (context, game) => SolvedCard(
+                hintsUsed: game.hintsUsed.value,
+                clue: GlazeDigitsClue(
+                  digits: game.board.puzzle.keystoneDiagonal,
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-              child: Row(
-                children: [
-                  for (var v = 1; v <= size; v++)
-                    Expanded(
-                      child: _GlazeButton(value: v, game: _game),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextButton.icon(
-                    onPressed: _game.erase,
-                    icon: const Icon(Icons.backspace_outlined),
-                    label: const Text('Erase'),
-                  ),
-                  ValueListenableBuilder<int>(
-                    valueListenable: _game.hintsUsed,
-                    builder: (context, used, _) => TextButton.icon(
-                      onPressed: _game.useHint,
-                      icon: const Icon(Icons.lightbulb_outline),
-                      label: Text(used == 0 ? 'Hint' : 'Hint ($used)'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GlazeButton extends StatelessWidget {
-  const _GlazeButton({required this.value, required this.game});
-
-  final int value;
-  final GlazeGame game;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: AspectRatio(
-        aspectRatio: 0.85,
-        child: Material(
-          color: TesseraColors.glaze(value),
-          borderRadius: BorderRadius.circular(10),
-          elevation: 1,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: () => game.placeGlaze(value),
-            child: Center(
-              child: Text(
-                '$value',
-                semanticsLabel: 'Glaze $value',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: TesseraColors.onGlaze(value),
-                ),
-              ),
-            ),
+            },
           ),
         ),
       ),
+      palette: GlazePalette(count: size, onPick: _game.placeGlaze),
+      tools: [
+        ToolButton(
+          icon: Icons.backspace_rounded,
+          label: 'Erase',
+          onPressed: _game.erase,
+        ),
+        ValueListenableBuilder<int>(
+          valueListenable: _game.hintsUsed,
+          builder: (context, used, _) => ToolButton(
+            icon: Icons.lightbulb_rounded,
+            label: 'Hint',
+            badge: used,
+            color: TesseraColors.terracotta,
+            onPressed: _game.useHint,
+          ),
+        ),
+      ],
     );
   }
 }
