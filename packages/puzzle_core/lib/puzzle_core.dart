@@ -5,6 +5,7 @@
 /// run in a CLI (for example the nightly pre-generation job).
 library;
 
+export 'src/cutouts/cutouts.dart';
 export 'src/daily.dart';
 export 'src/difficulty.dart';
 export 'src/glaze/glaze.dart';

@@ -17,6 +17,7 @@ lib/                      Flutter app shell + Flame game layer
   game/kiln_path/         KilnPathGame: drag-to-draw firing line, tiles, line overlay
   game/pebbles/           PebblesGame: tap-to-cycle tiles, region borders
   game/seams/             SeamsGame: drag seams between shards, kintsugi lines
+  game/cutouts/           CutoutsGame: folding story strip and four tappable options
   widgets/                Shared widgets (solved card, keystone clue previews)
 packages/puzzle_core/     Pure Dart: rules, seeded generation, solvers. No Flutter.
   lib/src/daily.dart      PuzzleDay (date -> seed, weekly difficulty), DailyTray
@@ -27,6 +28,8 @@ packages/puzzle_core/     Pure Dart: rules, seeded generation, solvers. No Flutt
                           the answer is unique; row-by-row solver, board, hints
   lib/src/seams/          Seams (Numberlink): a Hamiltonian line cut into seams,
                           kept only when the pruned solver finds one answer
+  lib/src/cutouts/        Cutouts (fold and punch): FoldedSheet layer model,
+                          distractors from real mistakes, board, hints
 ```
 
 The rule is that `puzzle_core` never imports Flutter or Flame, so every rule,
@@ -41,7 +44,7 @@ nightly pre-generation job).
 | Kiln Path | Hamiltonian path with checkpoints, 5x5 to 7x7 | Playable |
 | Pebbles | Star Battle style placement, one per row/column/region, 5x5 to 8x8 | Playable |
 | Seams | Numberlink, full coverage, 5x5 to 7x7 | Playable |
-| Cutouts | Paper fold and punch | Planned (M3) |
+| Cutouts | Fold and punch, pick the unfolded sheet from four | Playable |
 | Shards | Polyomino tiling | Planned (M3) |
 
 ## Daily puzzles

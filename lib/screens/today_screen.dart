@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 
 import '../theme/tessera_colors.dart';
+import 'cutouts_screen.dart';
 import 'glaze_screen.dart';
 import 'kiln_path_screen.dart';
 import 'pebbles_screen.dart';
@@ -48,6 +49,7 @@ class TodayScreen extends StatelessWidget {
       PuzzleKind.kilnPath => KilnPathScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.pebbles => PebblesScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.seams => SeamsScreen(seed: seed, difficulty: difficulty),
+      PuzzleKind.cutouts => CutoutsScreen(seed: seed, difficulty: difficulty),
       _ => null,
     };
     if (screen == null) return;
