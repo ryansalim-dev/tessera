@@ -7,6 +7,7 @@ import 'glaze_screen.dart';
 import 'kiln_path_screen.dart';
 import 'pebbles_screen.dart';
 import 'seams_screen.dart';
+import 'shards_screen.dart';
 
 /// The day's tray: four puzzle tiles and the keystone.
 ///
@@ -44,15 +45,14 @@ class TodayScreen extends StatelessWidget {
   void _open(BuildContext context, PuzzleKind kind, PuzzleDay day) {
     final seed = day.seedFor(kind);
     final difficulty = day.difficulty;
-    final Widget? screen = switch (kind) {
+    final Widget screen = switch (kind) {
       PuzzleKind.glaze => GlazeScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.kilnPath => KilnPathScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.pebbles => PebblesScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.seams => SeamsScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.cutouts => CutoutsScreen(seed: seed, difficulty: difficulty),
-      _ => null,
+      PuzzleKind.shards => ShardsScreen(seed: seed, difficulty: difficulty),
     };
-    if (screen == null) return;
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 

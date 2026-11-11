@@ -18,6 +18,7 @@ lib/                      Flutter app shell + Flame game layer
   game/pebbles/           PebblesGame: tap-to-cycle tiles, region borders
   game/seams/             SeamsGame: drag seams between shards, kintsugi lines
   game/cutouts/           CutoutsGame: folding story strip and four tappable options
+  game/shards/            ShardsGame: plate, draggable and turnable shards, tray
   widgets/                Shared widgets (solved card, keystone clue previews)
 packages/puzzle_core/     Pure Dart: rules, seeded generation, solvers. No Flutter.
   lib/src/daily.dart      PuzzleDay (date -> seed, weekly difficulty), DailyTray
@@ -30,6 +31,8 @@ packages/puzzle_core/     Pure Dart: rules, seeded generation, solvers. No Flutt
                           kept only when the pruned solver finds one answer
   lib/src/cutouts/        Cutouts (fold and punch): FoldedSheet layer model,
                           distractors from real mistakes, board, hints
+  lib/src/shards/         Shards (polyomino tiling): chipped plate broken into
+                          shards from its most hemmed-in tiles, board, hints
 ```
 
 The rule is that `puzzle_core` never imports Flutter or Flame, so every rule,
@@ -45,7 +48,7 @@ nightly pre-generation job).
 | Pebbles | Star Battle style placement, one per row/column/region, 5x5 to 8x8 | Playable |
 | Seams | Numberlink, full coverage, 5x5 to 7x7 | Playable |
 | Cutouts | Fold and punch, pick the unfolded sheet from four | Playable |
-| Shards | Polyomino tiling | Planned (M3) |
+| Shards | Polyomino tiling: drag and turn shards to rebuild the plate | Playable |
 
 ## Daily puzzles
 

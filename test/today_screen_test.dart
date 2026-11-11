@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:flutter/widgets.dart' show ValueKey;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:puzzle_core/puzzle_core.dart';
 import 'package:tessera/app.dart';
@@ -64,5 +66,21 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(find.textContaining('seams'), findsWidgets);
+  });
+
+  testWidgets('opens every puzzle type', (tester) async {
+    for (final kind in PuzzleKind.values) {
+      // A fresh key per type so each starts from the home screen.
+      await tester.pumpWidget(
+        TesseraApp(key: ValueKey(kind), today: DateTime(2026, 11, 11)),
+      );
+      await tester.ensureVisible(find.text(kind.title));
+      await tester.pump();
+      await tester.tap(find.text(kind.title));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.textContaining('Hint'), findsOneWidget, reason: kind.name);
+    }
   });
 }

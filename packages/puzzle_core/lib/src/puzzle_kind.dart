@@ -25,8 +25,5 @@ enum PuzzleKind {
   final String tagline;
 
   /// Types that have a playable implementation in this build.
-  bool get isPlayable => switch (this) {
-        glaze || kilnPath || pebbles || seams || cutouts => true,
-        _ => false,
-      };
+  bool get isPlayable => true;
 }
