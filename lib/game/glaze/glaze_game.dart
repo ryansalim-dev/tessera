@@ -1,4 +1,3 @@
-import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -116,9 +115,3 @@ class GlazeGame extends FlameGame {
     super.onRemove();
   }
 }
-
-/// Short "press in" used when a tile changes.
-Effect pressEffect() => ScaleEffect.to(
-  Vector2.all(0.9),
-  EffectController(duration: 0.06, reverseDuration: 0.1),
-);

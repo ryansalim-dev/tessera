@@ -12,11 +12,15 @@ Built with Flutter + [Flame](https://flame-engine.org). iOS and Android.
 lib/                      Flutter app shell + Flame game layer
   app.dart                MaterialApp, theme
   theme/                  Studio palette (clay, terracotta, celadon, cobalt, gold)
-  screens/                Today's tray, Glaze screen (Flutter widgets)
+  screens/                Today's tray, one screen per puzzle (Flutter widgets)
   game/glaze/             GlazeGame (FlameGame), board and tile components
+  game/kiln_path/         KilnPathGame: drag-to-draw firing line, tiles, line overlay
+  widgets/                Shared widgets (solved card, keystone clue previews)
 packages/puzzle_core/     Pure Dart: rules, seeded generation, solvers. No Flutter.
   lib/src/daily.dart      PuzzleDay (date -> seed, weekly difficulty), DailyTray
   lib/src/glaze/          Glaze (sudoku family): generator, solver, board, hints
+  lib/src/kiln_path/      Kiln Path (Hamiltonian path): backbite generator,
+                          pruned DFS uniqueness solver, board, hints
 ```
 
 The rule is that `puzzle_core` never imports Flutter or Flame, so every rule,
@@ -28,7 +32,7 @@ nightly pre-generation job).
 | Name | Rule family | Status |
 | --- | --- | --- |
 | Glaze | Sudoku family, 6x6 (gentle/steady) and 9x9 (tricky/fierce) | Playable |
-| Kiln Path | Hamiltonian path with checkpoints | Planned (M1) |
+| Kiln Path | Hamiltonian path with checkpoints, 5x5 to 7x7 | Playable |
 | Pebbles | Star Battle style placement | Planned (M3) |
 | Seams | Numberlink | Planned (M3) |
 | Cutouts | Paper fold and punch | Planned (M3) |
