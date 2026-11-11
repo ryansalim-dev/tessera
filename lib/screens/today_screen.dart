@@ -4,6 +4,7 @@ import 'package:puzzle_core/puzzle_core.dart';
 import '../theme/tessera_colors.dart';
 import 'glaze_screen.dart';
 import 'kiln_path_screen.dart';
+import 'pebbles_screen.dart';
 
 /// The day's tray: four puzzle tiles and the keystone.
 ///
@@ -44,6 +45,7 @@ class TodayScreen extends StatelessWidget {
     final Widget? screen = switch (kind) {
       PuzzleKind.glaze => GlazeScreen(seed: seed, difficulty: difficulty),
       PuzzleKind.kilnPath => KilnPathScreen(seed: seed, difficulty: difficulty),
+      PuzzleKind.pebbles => PebblesScreen(seed: seed, difficulty: difficulty),
       _ => null,
     };
     if (screen == null) return;

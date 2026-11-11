@@ -9,5 +9,6 @@ export 'src/daily.dart';
 export 'src/difficulty.dart';
 export 'src/glaze/glaze.dart';
 export 'src/kiln_path/kiln_path.dart';
+export 'src/pebbles/pebbles.dart';
 export 'src/puzzle_kind.dart';
 export 'src/seeded_random.dart';

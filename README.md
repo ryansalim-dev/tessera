@@ -15,12 +15,15 @@ lib/                      Flutter app shell + Flame game layer
   screens/                Today's tray, one screen per puzzle (Flutter widgets)
   game/glaze/             GlazeGame (FlameGame), board and tile components
   game/kiln_path/         KilnPathGame: drag-to-draw firing line, tiles, line overlay
+  game/pebbles/           PebblesGame: tap-to-cycle tiles, region borders
   widgets/                Shared widgets (solved card, keystone clue previews)
 packages/puzzle_core/     Pure Dart: rules, seeded generation, solvers. No Flutter.
   lib/src/daily.dart      PuzzleDay (date -> seed, weekly difficulty), DailyTray
   lib/src/glaze/          Glaze (sudoku family): generator, solver, board, hints
   lib/src/kiln_path/      Kiln Path (Hamiltonian path): backbite generator,
                           pruned DFS uniqueness solver, board, hints
+  lib/src/pebbles/        Pebbles (Star Battle): grown regions, reshaped until
+                          the answer is unique; row-by-row solver, board, hints
 ```
 
 The rule is that `puzzle_core` never imports Flutter or Flame, so every rule,
@@ -33,7 +36,7 @@ nightly pre-generation job).
 | --- | --- | --- |
 | Glaze | Sudoku family, 6x6 (gentle/steady) and 9x9 (tricky/fierce) | Playable |
 | Kiln Path | Hamiltonian path with checkpoints, 5x5 to 7x7 | Playable |
-| Pebbles | Star Battle style placement | Planned (M3) |
+| Pebbles | Star Battle style placement, one per row/column/region, 5x5 to 8x8 | Playable |
 | Seams | Numberlink | Planned (M3) |
 | Cutouts | Paper fold and punch | Planned (M3) |
 | Shards | Polyomino tiling | Planned (M3) |
